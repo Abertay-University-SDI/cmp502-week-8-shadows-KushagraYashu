@@ -1,15 +1,15 @@
 
 Texture2D shaderTexture : register(t0);
-Texture2D depthMapTexture : register(t1);
+Texture2D depthMapTexture[2] : register(t1);
 
 SamplerState diffuseSampler  : register(s0);
 SamplerState shadowSampler : register(s1);
 
 cbuffer LightBuffer : register(b0)
 {
-	float4 ambient;
-	float4 diffuse;
-	float3 direction;
+	float4 ambient[2];
+	float4 diffuse[2];
+	float4 direction[2];
 };
 
 struct InputType
@@ -17,7 +17,7 @@ struct InputType
     float4 position : SV_POSITION;
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
-    float4 lightViewPos : TEXCOORD1;
+    float4 lightViewPos[2] : TEXCOORD1;
 };
 
 // Calculate lighting intensity based on direction and normal. Combine with light colour.
@@ -70,19 +70,34 @@ float4 main(InputType input) : SV_TARGET
     float4 textureColour = shaderTexture.Sample(diffuseSampler, input.tex);
 
 	// Calculate the projected texture coordinates.
-    float2 pTexCoord = getProjectiveCoords(input.lightViewPos);
-	
+    float2 pTexCoord[2];
+    
+    pTexCoord[0] = getProjectiveCoords(input.lightViewPos[0]);
     // Shadow test. Is or isn't in shadow
-    if (hasDepthData(pTexCoord))
+    if (hasDepthData(pTexCoord[0]))
     {
         // Has depth map data
-        if (!isInShadow(depthMapTexture, pTexCoord, input.lightViewPos, shadowMapBias))
+        if (!isInShadow(depthMapTexture[0], pTexCoord[0], input.lightViewPos[0], shadowMapBias))
         {
             // is NOT in shadow, therefore light
-            colour = calculateLighting(-direction, input.normal, diffuse);
+            colour += calculateLighting(-direction[0].xyz, input.normal, diffuse[0]);
+        }
+    }
+
+    pTexCoord[1] = getProjectiveCoords(input.lightViewPos[1]);
+    // Shadow test. Is or isn't in shadow
+    if (hasDepthData(pTexCoord[1]))
+    {
+        // Has depth map data
+        if (!isInShadow(depthMapTexture[1], pTexCoord[1], input.lightViewPos[1], shadowMapBias))
+        {
+            // is NOT in shadow, therefore light
+            colour += calculateLighting(-direction[1].xyz, input.normal, diffuse[1]);
         }
     }
     
-    colour = saturate(colour + ambient);
+    //colour = saturate(colour + ambient[1] + ambient[0]);
+
+    
     return saturate(colour) * textureColour;
 }

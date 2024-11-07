@@ -28,12 +28,15 @@ private:
 	TextureShader* textureShader;
 	PlaneMesh* mesh;
 
-	Light* light;
+	OrthoMesh* debugOrthoMesh[2];
+	PlaneMesh* debugPlaneMesh[2];
+
+	Light* light[2];
 	AModel* model;
 	ShadowShader* shadowShader;
 	DepthShader* depthShader;
 
-	ShadowMap* shadowMap;
+	ShadowMap* shadowMap[2];
 };
 
 #endif
